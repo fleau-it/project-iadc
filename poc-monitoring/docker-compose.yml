@@ -3,12 +3,12 @@ version: '3'
 services:
 
   prometheus:
-    image: prom/prometheus:v2.11.1
+    image: prom/prometheus:v2.11.1 #prom/prometheus:v2.19.2
     container_name: prometheus
     deploy:
       replicas: 1
     volumes:
-      - prometheus-data:/prometheus
+      - ./prometheus-data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./alertmanager/alert.rules/alerts.rules.yml:/alertmanager/alert.rules/alerts.rules.yml
     command:
@@ -16,9 +16,17 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=365d'
     network_mode: "host"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.todocenter.fr`)"
+      - "traefik.http.routers.prometheus.entrypoints=web"
+      - "traefik.http.routers.prometheussecured.rule=Host(`prometheus.todocenter.fr`)"
+      - "traefik.http.routers.prometheussecured.entrypoints=websecure"
+      - "traefik.http.routers.prometheussecured.tls=true"
+      - "traefik.http.routers.prometheussecured.tls.certresolver=myresolver"
 
   alertmanager:
-    image: prom/alertmanager:v0.18.0
+    image: prom/alertmanager:v0.18.0 #prom/alertmanager:v0.21.0
     container_name: alertmanager
     deploy:
       replicas: 1
@@ -30,7 +38,7 @@ services:
     network_mode: "host"
 
   grafana:
-    image: grafana/grafana:6.2.5
+    image: grafana/grafana:6.2.5 #grafana/grafana:7.0.5
     container_name: grafana
     environment:
       - GF_PATHS_CONFIG=/etc/grafana/grafana.ini
@@ -39,15 +47,23 @@ services:
     depends_on:
       - prometheus
     volumes:
-      - grafana-data:/var/lib/grafana
+      - ./grafana-data:/var/lib/grafana
       - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
       - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./grafana/dashboards:/var/lib/grafana/dashboards
     network_mode: "host"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.todocenter.fr`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.routers.grafanasecured.rule=Host(`grafana.todocenter.fr`)"
+      - "traefik.http.routers.grafanasecured.entrypoints=websecure"
+      - "traefik.http.routers.grafanasecured.tls=true"
+      - "traefik.http.routers.grafanasecured.tls.certresolver=myresolver"
 
   blackbox:
-    image: prom/blackbox-exporter:v0.14.0
+    image: prom/blackbox-exporter:v0.14.0 #v0.17.0
     container_name: blackbox_exporter
     deploy:
       replicas: 1
@@ -56,7 +72,7 @@ services:
     network_mode: "host"
 
   node_exporter:
-    image: prom/node-exporter:v0.18.1
+    image: prom/node-exporter:v0.18.1 #prom/node-exporter:v1.0.1
     container_name: node_exporter
     deploy:
       replicas: 1

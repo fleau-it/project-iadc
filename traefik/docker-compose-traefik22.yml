@@ -1,8 +1,8 @@
-# docker-compose-traefik-v2.2-test18.yml
+# docker-compose-traefik22.yml
 # MAJ le 04/07/2020 par Florian LEAU
 # --------------------------------------------------------------------------------------------------------------------------
-# Changements apportés test18 :
-# -> nettoyage du docker-compose et ajout de commentaires
+# Changements apportés :
+# -> activation des metrics avec Prometheus
 # -> 
 # -> 
 # Points + :
@@ -12,12 +12,12 @@
 # -> 
 # -> 
 # A ajouter / à faire / à résoudre :
-# -> Faire config avec tcp et les serveurs mssql
-# -> Activer metrics
+# -> 
+# -> 
 # --------------------------------------------------------------------------------------------------------------------------
 # Sources :
-# - https://docs.traefik.io/user-guides/docker-compose/acme-http/
-# - 
+# - https://docs.traefik.io/observability/metrics/overview/
+# - https://docs.traefik.io/observability/metrics/prometheus/
 # --------------------------------------------------------------------------------------------------------------------------
 version: '3'
 
@@ -26,7 +26,8 @@ services:
     image: "traefik:v2.2"
     #container_name: "traefik22-rv-proxy"
     container_name: "tr22-rvp"
-    command:
+    command:      
+      #- "--" #
       - "--log.level=DEBUG" # Config Log ; niveau d'informations ()
       #- "--log.format=json" # Config Log ; Format des logs (classique ou json)
       - "--log.filePath=/var/log/traefik-log/traefik.log" # Config Log
@@ -54,6 +55,15 @@ services:
       - "--entrypoints.websecure.address=:443" # Global HTTP to HTTPS redirection, static configuration
       # Tests config gestion port 1433 pour routage MSSQL
       #- "--entrypoints.mssql.address=:1433" #testFL"
+      # Tests config metrics Prometheus
+      - "--metrics=true" # Activation des metrics
+      - "--metrics.prometheus=true" # Activation de Prometheus
+      - "--metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000" # Buckets for latency metrics ; Optional, Default="0.100000, 0.300000, 1.200000, 5.000000"
+      - "--metrics.prometheus.addEntryPointsLabels=true" # Enable metrics on entry points ; Optional, Default=true
+      - "--metrics.prometheus.addServicesLabels=true" # Enable metrics on services
+      - "--entryPoints.metrics.address=:8082" # Entry point used to expose metrics
+      - "--metrics.prometheus.entryPoint=metrics" # Entry point used to expose metrics
+      - "--metrics.prometheus.manualrouting=false" # If manualRouting is true, it disables the default internal router in order to allow one to create a custom router for the prometheus@internal service
     labels:
       # HTTP to HTTPS redirection
       - "traefik.http.routers.http_catchall.rule=HostRegexp(`{any:.+}`)"

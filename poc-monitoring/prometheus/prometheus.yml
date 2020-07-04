@@ -1,5 +1,5 @@
 global:
-  scrape_interval:     15s # Par défaut prometheus va scrapper les cibles toutes les 15 secondes
+  scrape_interval: 15s # Par défaut prometheus va scrapper les cibles toutes les 15 secondes
 
   # Attach these labels to any time series or alerts when communicating with
   # external systems (federation, remote storage, Alertmanager).
@@ -7,7 +7,6 @@ global:
     env: 'infrastructure'   # C'est simplement le nom de votre environnement
 
 # spécification du serveur alertmanager
-
 alerting:
   alertmanagers:
   - static_configs:
@@ -17,14 +16,13 @@ alerting:
     timeout: 10s
 
 # fichier de règles pour l'alerting, c'est dans ce fichier que sont les définitions des alertes
-
 rule_files:
   - "/alertmanager/alert.rules/alerts.rules.yml"
 
 # la scrape configuration de prometheus, les hosts qu'il va contacter pour chercher les métrique
 scrape_configs:
 
-  - job_name: 'localhost'     # <-- j'ai mis ce titre de job mais le truc c'est de mettre un nom de job explicite
+  - job_name: 'job_localhost'     # <-- j'ai mis ce titre de job mais le truc c'est de mettre un nom de job explicite
     static_configs:
       - targets: ['127.0.0.1:9100']
     scrape_interval: 5s
