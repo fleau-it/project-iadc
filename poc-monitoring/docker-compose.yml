@@ -32,7 +32,6 @@ services:
       #- "--certificatesresolvers.myresolver.acme.tlschallenge=true" #Config ACME
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure" # Global HTTP to HTTPS redirection, static configuration
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https" # Global HTTP to HTTPS redirection, static configuration
-      - "--entrypoints.websecure.address=:443" # Global HTTP to HTTPS redirection, static configuration
       # Tests config gestion port 1433 pour routage MSSQL
       #- "--entrypoints.mssql.address=:1433" #testFL"
       # Tests config metrics Prometheus
@@ -44,6 +43,9 @@ services:
       - "--entryPoints.metrics.address=:8082" # Entry point used to expose metrics
       - "--metrics.prometheus.entryPoint=metrics" # Entry point used to expose metrics
       - "--metrics.prometheus.manualrouting=false" # If manualRouting is true, it disables the default internal router in order to allow one to create a custom router for the prometheus@internal service
+      # Tests config gestion port 9090 et 3000 pour routage Prometheus et Grafana
+      - "--entrypoints.prometheus.address=:9090"
+      - "--entrypoints.grafana.address=:3000"
     labels:
       # HTTP to HTTPS redirection
       - "traefik.http.routers.http_catchall.rule=HostRegexp(`{any:.+}`)"
@@ -105,8 +107,8 @@ services:
     container_name: prometheus
     #deploy:
     #  replicas: 1
-    ports:
-      - "9090:9090"
+    #ports:
+    #  - "9090:9090"
     volumes:
       - prometheus-data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -120,14 +122,15 @@ services:
     #network_mode: "host"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.service=prometheus"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
-      #- "traefik.port=9090"
-      - "traefik.docker.network=inbound"
+      #- "traefik.http.routers.prometheus.service=prometheus"
+      #- "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      - "traefik.port=9090"
+      #- "traefik.docker.network=inbound"
       - "traefik.http.routers.prometheus.rule=Host(`prometheus.todocenter.fr`)"
       - "traefik.http.routers.prometheus.entrypoints=web"
       - "traefik.http.routers.prometheussecured.rule=Host(`prometheus.todocenter.fr`)"
       - "traefik.http.routers.prometheussecured.entrypoints=websecure"
+      - "traefik.http.middlewares.prometheus.redirectscheme.port=9090"
       - "traefik.http.routers.prometheussecured.tls=true"
       - "traefik.http.routers.prometheussecured.tls.certresolver=myresolver"
     networks:
@@ -141,8 +144,8 @@ services:
       - GF_PATHS_CONFIG=/etc/grafana/grafana.ini
     #deploy:
     #  replicas: 1
-    ports:
-      - "3000:3000"
+    #ports:
+    #  - "3000:3000"
     depends_on:
       - prometheus
     volumes:
@@ -154,10 +157,10 @@ services:
     #network_mode: "host"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.grafana.service=grafana"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-      #- "traefik.port=3000"
-      - "traefik.docker.network=inbound"
+      #- "traefik.http.routers.grafana.service=grafana"
+      #- "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.port=3000"
+      #- "traefik.docker.network=inbound"
       - "traefik.http.routers.grafana.rule=Host(`grafana.todocenter.fr`)"
       - "traefik.http.routers.grafana.entrypoints=web"
       - "traefik.http.routers.grafanasecured.rule=Host(`grafana.todocenter.fr`)"
