@@ -18,6 +18,10 @@ services:
     network_mode: "host"
     labels:
       - "traefik.enable=true"
+      #- "traefik.http.routers.prometheus.service=prometheus"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      #- "traefik.port=9090"
+      - "traefik.docker.network=inbound"
       - "traefik.http.routers.prometheus.rule=Host(`prometheus.todocenter.fr`)"
       - "traefik.http.routers.prometheus.entrypoints=web"
       - "traefik.http.routers.prometheussecured.rule=Host(`prometheus.todocenter.fr`)"
@@ -57,6 +61,10 @@ services:
     network_mode: "host"
     labels:
       - "traefik.enable=true"
+      #- "traefik.http.routers.grafana.service=grafana"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      #- "traefik.port=3000"
+      - "traefik.docker.network=inbound"
       - "traefik.http.routers.grafana.rule=Host(`grafana.todocenter.fr`)"
       - "traefik.http.routers.grafana.entrypoints=web"
       - "traefik.http.routers.grafanasecured.rule=Host(`grafana.todocenter.fr`)"

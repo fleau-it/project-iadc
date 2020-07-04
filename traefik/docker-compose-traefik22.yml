@@ -94,6 +94,7 @@ services:
       - "./traefik-log:/var/log/traefik-log" # Correspondance des dossiers de stockage réel et conteneur des logs
     networks:
       - traefik-net
+      - inbound
 
   nginx:
     image: nginx:latest
@@ -122,3 +123,6 @@ services:
 networks:
   traefik-net:
     external: true
+  inbound:
+    driver: overlay
+    name: inbound
