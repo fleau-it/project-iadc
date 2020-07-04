@@ -103,8 +103,10 @@ services:
   prometheus:
     image: prom/prometheus:v2.11.1 #prom/prometheus:v2.19.2
     container_name: prometheus
-    deploy:
-      replicas: 1
+    #deploy:
+    #  replicas: 1
+    #ports:
+    #  - "9090:9090"
     volumes:
       - prometheus-data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -113,8 +115,8 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=365d'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
+      #- '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      #- '--web.console.templates=/usr/share/prometheus/consoles'
     #network_mode: "host"
     labels:
       - "traefik.enable=true"
@@ -132,29 +134,13 @@ services:
       - traefik-net
       - inbound
 
-  alertmanager:
-    image: prom/alertmanager:v0.18.0 #prom/alertmanager:v0.21.0
-    container_name: alertmanager
-    deploy:
-      replicas: 1
-    volumes:
-      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
-      - ./alertmanager/templates/default.tmpl:/etc/alertmanager/templates/default.tmpl
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-    #network_mode: "host"
-    #labels:
-    #  - "traefik.enable=true"
-    networks:
-      - inbound
-
   grafana:
     image: grafana/grafana:6.2.5 #grafana/grafana:7.0.5
     container_name: grafana
     environment:
       - GF_PATHS_CONFIG=/etc/grafana/grafana.ini
-    deploy:
-      replicas: 1
+    #deploy:
+    #  replicas: 1
     depends_on:
       - prometheus
     volumes:
@@ -181,38 +167,65 @@ services:
       - traefik-net
       - inbound
 
+  alertmanager:
+    image: prom/alertmanager:v0.18.0 #prom/alertmanager:v0.21.0
+    container_name: alertmanager
+    #deploy:
+    #  replicas: 1
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./alertmanager/templates/default.tmpl:/etc/alertmanager/templates/default.tmpl
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    #network_mode: "host"
+    labels:
+      - "traefik.enable=true"
+    networks:
+      - inbound
+
   blackbox:
     image: prom/blackbox-exporter:v0.14.0 #v0.17.0
     container_name: blackbox_exporter
-    deploy:
-      replicas: 1
+    #deploy:
+    #  replicas: 1
     volumes:
     - ./blackbox:/config
     #network_mode: "host"
-    #labels:
-    #  - "traefik.enable=true"
+    labels:
+      - "traefik.enable=true"
     networks:
       - inbound
 
   node_exporter:
     image: prom/node-exporter:v0.18.1 #prom/node-exporter:v1.0.1
     container_name: node_exporter
-    deploy:
-      replicas: 1
+    #deploy:
+    #  replicas: 1
     #network_mode: "host"
-    #labels:
-    #  - "traefik.enable=true"
+    labels:
+      - "traefik.enable=true"
     networks:
       - inbound
 
 volumes:
   prometheus-data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /opt/dockerflproject/08-prometeus-grafana/prometheus-data
+
   grafana-data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /opt/dockerflproject/08-prometeus-grafana/grafana-data
 
 networks:
   traefik-net:
     external: true
   inbound:
-    driver: host
+    external: true
     #driver: overlay
     #name: inbound
