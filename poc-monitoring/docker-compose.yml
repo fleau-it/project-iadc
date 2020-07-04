@@ -15,10 +15,12 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=365d'
-    network_mode: "host"
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    #network_mode: "host"
     labels:
       - "traefik.enable=true"
-      #- "traefik.http.routers.prometheus.service=prometheus"
+      - "traefik.http.routers.prometheus.service=prometheus"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
       #- "traefik.port=9090"
       - "traefik.docker.network=inbound"
@@ -39,7 +41,7 @@ services:
       - ./alertmanager/templates/default.tmpl:/etc/alertmanager/templates/default.tmpl
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
-    network_mode: "host"
+    #network_mode: "host"
     #labels:
     #  - "traefik.enable=true"
 
@@ -58,10 +60,10 @@ services:
       - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./grafana/dashboards:/var/lib/grafana/dashboards
-    network_mode: "host"
+    #network_mode: "host"
     labels:
       - "traefik.enable=true"
-      #- "traefik.http.routers.grafana.service=grafana"
+      - "traefik.http.routers.grafana.service=grafana"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
       #- "traefik.port=3000"
       - "traefik.docker.network=inbound"
@@ -80,7 +82,7 @@ services:
       replicas: 1
     volumes:
     - ./blackbox:/config
-    network_mode: "host"
+    #network_mode: "host"
     #labels:
     #  - "traefik.enable=true"
 
@@ -89,10 +91,17 @@ services:
     container_name: node_exporter
     deploy:
       replicas: 1
-    network_mode: "host"
+    #network_mode: "host"
     #labels:
     #  - "traefik.enable=true"
 
 volumes:
   prometheus-data:
   grafana-data:
+
+networks:
+  traefik-net:
+    external: true
+  inbound:
+    driver: overlay
+    #name: inbound
