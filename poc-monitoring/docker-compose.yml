@@ -1,6 +1,104 @@
 version: '3'
 
 services:
+  traefik22-rv-proxy:
+    image: "traefik:v2.2"
+    #container_name: "traefik22-rv-proxy"
+    container_name: "tr22-rvp"
+    command:      
+      #- "--" #
+      - "--log.level=DEBUG" # Config Log ; niveau d'informations ()
+      #- "--log.format=json" # Config Log ; Format des logs (classique ou json)
+      - "--log.filePath=/var/log/traefik-log/traefik.log" # Config Log
+      - "--accesslog=true" # Config Access Log
+      - "--accesslog.filepath=/var/log/traefik-log/access.log" # Config Access Log
+      - "--accesslog.bufferingsize=100" # Config Access Log, number of log lines Traefik will keep in memory before writing them to the selected output
+      - "--api.dashboard=true" # Activation du dashboard
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false" # Défini si Traefik ajoute automatiquement ou non les conteneurs en backfront
+      - "--providers.docker.watch"
+      # Implique d'ajouter traefik.enable=true dans la catégorie label de chaque conteneur déployé si exposedbydefault=false
+      - "--entrypoints.web.address=:80" #Config de base
+      - "--entrypoints.websecure.address=:443" #Config de base
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true" #Config ACME HTTP Challenge : Enable a http challenge named "myresolver"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web" #Config ACME HTTP Challenge : Tell it to use our predefined entrypoint named "web"
+      - "--certificatesresolvers.myresolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory" #Certificat pour phase prod
+      #- "--certificatesresolvers.myresolver.acme.caserver=https://acme-v02.api.letsencrypt.org/acme/acct/87563063" #Certificat pour phase prod
+      #- "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory" #Certificat pour phase Dev/test
+      - "--certificatesresolvers.myresolver.acme.email=florian.leau@gmail.com" #Config ACME : The email to provide to let's encrypt
+      #- "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json" #Config ACME
+      - "--certificatesresolvers.myresolver.acme.storage=/acme.json" #Config ACME ; emplacement interne de stockage des certificats
+      #- "--certificatesresolvers.myresolver.acme.storage=acme.json" #Config ACME
+      #- "--certificatesresolvers.myresolver.acme.tlschallenge=true" #Config ACME
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure" # Global HTTP to HTTPS redirection, static configuration
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https" # Global HTTP to HTTPS redirection, static configuration
+      - "--entrypoints.websecure.address=:443" # Global HTTP to HTTPS redirection, static configuration
+      # Tests config gestion port 1433 pour routage MSSQL
+      #- "--entrypoints.mssql.address=:1433" #testFL"
+      # Tests config metrics Prometheus
+      - "--metrics=true" # Activation des metrics
+      - "--metrics.prometheus=true" # Activation de Prometheus
+      - "--metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000" # Buckets for latency metrics ; Optional, Default="0.100000, 0.300000, 1.200000, 5.000000"
+      - "--metrics.prometheus.addEntryPointsLabels=true" # Enable metrics on entry points ; Optional, Default=true
+      - "--metrics.prometheus.addServicesLabels=true" # Enable metrics on services
+      - "--entryPoints.metrics.address=:8082" # Entry point used to expose metrics
+      - "--metrics.prometheus.entryPoint=metrics" # Entry point used to expose metrics
+      - "--metrics.prometheus.manualrouting=false" # If manualRouting is true, it disables the default internal router in order to allow one to create a custom router for the prometheus@internal service
+    labels:
+      # HTTP to HTTPS redirection
+      - "traefik.http.routers.http_catchall.rule=HostRegexp(`{any:.+}`)"
+      - "traefik.http.routers.http_catchall.entrypoints=web"
+      - "traefik.http.routers.http_catchall.middlewares=https_redirect"
+      - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https_redirect.redirectscheme.permanent=true"
+      # Dashboard sécurisé
+      - "traefik.enable=true"
+      #- "traefik.http.routers.api.rule=Host(`todocenter.fr`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))" #OK
+      - "traefik.http.routers.api.rule=Host(`traefik.todocenter.fr`)" #OK
+      - "traefik.http.routers.api.service=api@internal" #OK
+      - "traefik.http.routers.api.entrypoints=websecure" #OK
+      - "traefik.http.routers.api.tls.certresolver=myresolver" #OK
+      - "traefik.http.routers.api.middlewares=auth" #Parti authentification : OK
+      - "traefik.http.middlewares.auth.basicauth.users=ato:$$apr1$$v2/bgiLv$$GdA.vfWNBj0SrWYTF2vek/" #Parti authentification : OK ; login/mdp pour accès au dashboard : ato/ato ; traefik.todocenter.fr
+    ports:
+      - "80:80"
+      - "443:443"
+      #- "8080:8080"
+      #- "1433:1433" #MSSQL
+    volumes:
+      #- "/root/traefik-v22:/letsencrypt"
+      - "/root/traefik-v22/acme.json:/acme.json" # Correspondance des dossiers de stockage réel et conteneur des certificats 
+      #- "./letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/usr/share/zoneinfo:/usr/share/zoneinfo:ro"
+      - "./traefik-log:/var/log/traefik-log" # Correspondance des dossiers de stockage réel et conteneur des logs
+    networks:
+      - traefik-net
+      #- inbound
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    container_name: "nginx-todo"
+    labels:
+      - "traefik.enable=true"
+      #- "traefik.http.routers.nginx.rule=Host(`traefik-nginx.atomikcactus.net`)"
+      #- "traefik.http.routers.nginx.entrypoints=websecure"
+      #- "traefik.http.routers.nginx.tls.certresolver=myresolver"
+      #traefik.http.routers.nginx.rule: Host(`traefik-nginx.atomikcactus.net`)
+      #traefik.http.routers.nginx.entrypoints: web
+      - "traefik.http.routers.nginx.rule=Host(`todocenter.fr`)"
+      - "traefik.http.routers.nginx.entrypoints=web"
+      #traefik.http.routers.nginx.middlewares: https_redirect
+      #traefik.http.routers.nginxsecured.rule: Host(`traefik-nginx.atomikcactus.net`)
+      #traefik.http.routers.nginxsecured.entrypoints: websecure
+      #traefik.http.routers.nginxsecured.tls: true
+      - "traefik.http.routers.nginxsecured.rule=Host(`todocenter.fr`)"
+      - "traefik.http.routers.nginxsecured.entrypoints=websecure"
+      - "traefik.http.routers.nginxsecured.tls=true"
+      - "traefik.http.routers.nginxsecured.tls.certresolver=myresolver"
+    networks:
+      - traefik-net
 
   prometheus:
     image: prom/prometheus:v2.11.1 #prom/prometheus:v2.19.2
