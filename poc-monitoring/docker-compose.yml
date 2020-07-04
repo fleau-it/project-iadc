@@ -8,7 +8,7 @@ services:
     deploy:
       replicas: 1
     volumes:
-      - ./prometheus-data:/prometheus
+      - prometheus-data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./alertmanager/alert.rules/alerts.rules.yml:/alertmanager/alert.rules/alerts.rules.yml
     command:
@@ -36,6 +36,8 @@ services:
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
     network_mode: "host"
+    #labels:
+    #  - "traefik.enable=true"
 
   grafana:
     image: grafana/grafana:6.2.5 #grafana/grafana:7.0.5
@@ -47,7 +49,7 @@ services:
     depends_on:
       - prometheus
     volumes:
-      - ./grafana-data:/var/lib/grafana
+      - grafana-data:/var/lib/grafana
       - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
       - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
@@ -61,6 +63,7 @@ services:
       - "traefik.http.routers.grafanasecured.entrypoints=websecure"
       - "traefik.http.routers.grafanasecured.tls=true"
       - "traefik.http.routers.grafanasecured.tls.certresolver=myresolver"
+    #user: "104" #Tentative de résolution du problème de droit d'accès sur le dossier /var/lib/grafana
 
   blackbox:
     image: prom/blackbox-exporter:v0.14.0 #v0.17.0
@@ -70,6 +73,8 @@ services:
     volumes:
     - ./blackbox:/config
     network_mode: "host"
+    #labels:
+    #  - "traefik.enable=true"
 
   node_exporter:
     image: prom/node-exporter:v0.18.1 #prom/node-exporter:v1.0.1
@@ -77,6 +82,8 @@ services:
     deploy:
       replicas: 1
     network_mode: "host"
+    #labels:
+    #  - "traefik.enable=true"
 
 volumes:
   prometheus-data:
