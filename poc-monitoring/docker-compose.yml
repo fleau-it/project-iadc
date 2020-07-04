@@ -165,6 +165,7 @@ services:
       - "traefik.http.routers.grafana.entrypoints=web"
       - "traefik.http.routers.grafanasecured.rule=Host(`grafana.todocenter.fr`)"
       - "traefik.http.routers.grafanasecured.entrypoints=websecure"
+      - "traefik.http.middlewares.grafana.redirectscheme.port=3000"
       - "traefik.http.routers.grafanasecured.tls=true"
       - "traefik.http.routers.grafanasecured.tls.certresolver=myresolver"
     #user: "104" #Tentative de résolution du problème de droit d'accès sur le dossier /var/lib/grafana
