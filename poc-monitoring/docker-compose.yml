@@ -219,6 +219,33 @@ services:
     networks:
       - inbound
 
+  netdata:
+    image: netdata/netdata
+    container_name: netdata
+    hostname: example.com # set to fqdn of host
+    ports:
+      - 19999:19999
+    restart: unless-stopped
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.netdatasec.rule=Host(`netdata.todocenter.fr`)"
+      - "traefik.http.routers.netdatasec.entrypoints=websecure"
+      - "traefik.http.routers.netdatasec.tls=true"
+      - "traefik.http.routers.netdatasec.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.netdatasec.redirectscheme.port=19999"
+
 volumes:
   prometheus-data:
     #driver: local
@@ -233,6 +260,9 @@ volumes:
     #  o: bind
     #  type: none
     #  device: /opt/dockerflproject/08-prometeus-grafana/grafana-data
+
+  netdatalib:
+  netdatacache:
 
 networks:
   traefik-net:
