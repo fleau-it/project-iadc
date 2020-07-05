@@ -16,9 +16,9 @@ services:
       - "--api.dashboard=true" # Activation du dashboard
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false" # Défini si Traefik ajoute automatiquement ou non les conteneurs en backfront
-      - "--providers.docker.watch"
       # Implique d'ajouter traefik.enable=true dans la catégorie label de chaque conteneur déployé si exposedbydefault=false
-      - "--entrypoints.web.address=:80" #Config de base
+      #- "--providers.docker.watch" # Pour Docker Swarm
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"      - "--entrypoints.web.address=:80" #Config de base
       - "--entrypoints.websecure.address=:443" #Config de base
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true" #Config ACME HTTP Challenge : Enable a http challenge named "myresolver"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web" #Config ACME HTTP Challenge : Tell it to use our predefined entrypoint named "web"
@@ -99,16 +99,16 @@ services:
       - "traefik.http.routers.nginxsec.entrypoints=websecure"
       - "traefik.http.routers.nginxsec.tls=true"
       - "traefik.http.routers.nginxsec.tls.certresolver=myresolver"
-    #networks:
-    #  - traefik-net
+    networks:
+      - traefik-net 
 
   prometheus:
     image: prom/prometheus:v2.11.1 #prom/prometheus:v2.19.2
     container_name: prometheus
     #deploy:
     #  replicas: 1
-    ports:
-      - "9090:9090"
+    #ports:
+    #  - "9090:9090"
     volumes:
       - prometheus-data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -122,20 +122,20 @@ services:
     #network_mode: "host"
     labels:
       - "traefik.enable=true"
-      #- "traefik.http.routers.prometheus.service=prometheus"
-      #- "traefik.http.services.prometheus.loadbalancer.server.port=9090"
-      - "traefik.port=9090"
+      - "traefik.http.routers.prometheussec.service=prometheus"
+      - "traefik.http.services.prometheussec.loadbalancer.server.port=9090"
+      #- "traefik.port=9090"
       #- "traefik.docker.network=inbound"
       #- "traefik.http.routers.prometheus.rule=Host(`prometheus.todocenter.fr`)"
       #- "traefik.http.routers.prometheus.entrypoints=web"
       - "traefik.http.routers.prometheussec.rule=Host(`prometheus.todocenter.fr`)"
       - "traefik.http.routers.prometheussec.entrypoints=websecure"
-      - "traefik.http.middlewares.prometheus.redirectscheme.port=9090"
+      #- "traefik.http.middlewares.prometheus.redirectscheme.port=9090"
+      #- "traefik.http.middlewares.prometheussec.redirectscheme.port=9090"
       - "traefik.http.routers.prometheussec.tls=true"
       - "traefik.http.routers.prometheussec.tls.certresolver=myresolver"
     networks:
       - traefik-net
-      - inbound
 
   grafana:
     image: grafana/grafana:6.2.5 #grafana/grafana:7.0.5
@@ -144,8 +144,8 @@ services:
       - GF_PATHS_CONFIG=/etc/grafana/grafana.ini
     #deploy:
     #  replicas: 1
-    ports:
-      - "3000:3000"
+    #ports:
+    #  - "3000:3000"
     depends_on:
       - prometheus
     volumes:
@@ -157,21 +157,21 @@ services:
     #network_mode: "host"
     labels:
       - "traefik.enable=true"
-      #- "traefik.http.routers.grafana.service=grafana"
-      #- "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.http.routers.grafanasec.service=grafana"
+      - "traefik.http.services.grafanasec.loadbalancer.server.port=3000"
       - "traefik.port=3000"
       #- "traefik.docker.network=inbound"
       #- "traefik.http.routers.grafana.rule=Host(`grafana.todocenter.fr`)"
       #- "traefik.http.routers.grafana.entrypoints=web"
       - "traefik.http.routers.grafanasec.rule=Host(`grafana.todocenter.fr`)"
       - "traefik.http.routers.grafanasec.entrypoints=websecure"
-      - "traefik.http.middlewares.grafana.redirectscheme.port=3000"
+      #- "traefik.http.middlewares.grafana.redirectscheme.port=3000"
+      #- "traefik.http.middlewares.grafanasec.redirectscheme.port=3000"
       - "traefik.http.routers.grafanasec.tls=true"
       - "traefik.http.routers.grafanasec.tls.certresolver=myresolver"
     #user: "104" #Tentative de résolution du problème de droit d'accès sur le dossier /var/lib/grafana
     networks:
       - traefik-net
-      - inbound
 
   alertmanager:
     image: prom/alertmanager:v0.18.0 #prom/alertmanager:v0.21.0
@@ -185,11 +185,11 @@ services:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
     #network_mode: "host"
     ports:
-      - "9093:9093"
+      - ":9093"
     labels:
       - "traefik.enable=true"
     networks:
-      - inbound
+      - traefik-net
 
   blackbox:
     image: prom/blackbox-exporter:v0.14.0 #v0.17.0
@@ -200,11 +200,11 @@ services:
     - ./blackbox:/config
     #network_mode: "host"
     ports:
-      - "9115:9115"
+      - ":9115"
     labels:
       - "traefik.enable=true"
     networks:
-      - inbound
+      - traefik-net
 
   node_exporter:
     image: prom/node-exporter:v0.18.1 #prom/node-exporter:v1.0.1
@@ -213,18 +213,18 @@ services:
     #  replicas: 1
     #network_mode: "host"
     ports:
-      - "9100:9100"
+      - ":9100"
     labels:
       - "traefik.enable=true"
     networks:
-      - inbound
+      - traefik-net
 
   netdata:
     image: netdata/netdata
     container_name: netdata
     hostname: example.com # set to fqdn of host
-    ports:
-      - 19999:19999
+    #ports:
+    #  - "19999:19999"
     restart: unless-stopped
     cap_add:
       - SYS_PTRACE
@@ -244,7 +244,11 @@ services:
       - "traefik.http.routers.netdatasec.entrypoints=websecure"
       - "traefik.http.routers.netdatasec.tls=true"
       - "traefik.http.routers.netdatasec.tls.certresolver=myresolver"
-      - "traefik.http.middlewares.netdatasec.redirectscheme.port=19999"
+      #- "traefik.http.middlewares.netdatasec.redirectscheme.port=19999"
+      #- "traefik.http.routers.grafanasec.service=grafana"
+      - "traefik.http.services.netdatasec.loadbalancer.server.port=19999"
+    networks:
+      - traefik-net
 
 volumes:
   prometheus-data:
