@@ -185,8 +185,8 @@ services:
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
     #network_mode: "host"
-    ports:
-      - ":9093"
+    #ports:
+    #  - "9093:9093"
     labels:
       - "traefik.enable=true"
     networks:
@@ -200,8 +200,8 @@ services:
     volumes:
     - ./blackbox:/config
     #network_mode: "host"
-    ports:
-      - ":9115"
+    #ports:
+    #  - "9115:9115"
     labels:
       - "traefik.enable=true"
     networks:
@@ -213,8 +213,8 @@ services:
     #deploy:
     #  replicas: 1
     #network_mode: "host"
-    ports:
-      - ":9100"
+    #ports:
+    #  - "9100:9100"
     labels:
       - "traefik.enable=true"
     networks:
