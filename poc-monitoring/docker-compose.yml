@@ -18,7 +18,8 @@ services:
       - "--providers.docker.exposedbydefault=false" # Défini si Traefik ajoute automatiquement ou non les conteneurs en backfront
       # Implique d'ajouter traefik.enable=true dans la catégorie label de chaque conteneur déployé si exposedbydefault=false
       #- "--providers.docker.watch" # Pour Docker Swarm
-      - "--providers.docker.endpoint=unix:///var/run/docker.sock"      - "--entrypoints.web.address=:80" #Config de base
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--entrypoints.web.address=:80" #Config de base
       - "--entrypoints.websecure.address=:443" #Config de base
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true" #Config ACME HTTP Challenge : Enable a http challenge named "myresolver"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web" #Config ACME HTTP Challenge : Tell it to use our predefined entrypoint named "web"
