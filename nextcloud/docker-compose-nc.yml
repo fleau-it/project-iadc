@@ -5,11 +5,12 @@
 # -> remplacement des "todocenter.fr" par "atomikcactus.net"
 # -> ajout des conteneurs pour déployer NextCloud
 # -> ajout du conteneur de netdata
+# -> retrogradation de la version du docker-compose à 2
 # Points + :
 # -> 
 # -> 
 # Problèmes :
-# -> 
+# -> volume_from invalide
 # -> 
 # A ajouter / à faire / à résoudre :
 # -> 
@@ -19,7 +20,7 @@
 # - https://hub.docker.com/_/nextcloud
 # - 
 # --------------------------------------------------------------------------------------------------------------------------
-version: '3'
+version: '2'
 
 services:
   traefik22-rv-proxy:
