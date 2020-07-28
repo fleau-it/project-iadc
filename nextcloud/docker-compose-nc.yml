@@ -7,11 +7,13 @@
 # -> ajout du conteneur de netdata
 # -> Retour à la version 3 du docker-compose
 # -> Modification du volume pour nginx-nc
+# -> Modification des volumes de tous les conteneurs pour stockage dans dossier local du docker-compose
+# -> 
 # Points + :
 # -> 
 # -> 
 # Problèmes :
-# -> volume_from invalide
+# -> volume_from invalide en version 3
 # -> 
 # A ajouter / à faire / à résoudre :
 # -> 
@@ -19,6 +21,7 @@
 # --------------------------------------------------------------------------------------------------------------------------
 # Sources :
 # - https://hub.docker.com/_/nextcloud
+# - https://stackoverflow.com/questions/42244079/how-to-replace-volumes-from-in-docker-composer-v3
 # - 
 # --------------------------------------------------------------------------------------------------------------------------
 version: '2'
@@ -118,8 +121,8 @@ services:
     #ports:
     #  - "80:80"
     volumes:
-      - "~/nc/:var/www/html/"
-      - "~/nc-data/:var/www/html/data"
+      - "./nc/:var/www/html/"
+      - "./nc-data/:var/www/html/data/"
     links:
       - "bdd"
   
@@ -129,7 +132,7 @@ services:
     restart: always
     #container_name: "flmariadb"
     volumes:
-      - "~/mariadb-data/:var/lib/mysql/"
+      - "./mariadb-data/:var/lib/mysql/"
     environment:
       - MYSQL_ROOT_PASSWORD=rootAzerty@123
       - MYSQL_DATABASE=nc
@@ -169,7 +172,7 @@ services:
 
   netdata:
     image: netdata/netdata
-    container_name: netdata
+    #container_name: netdata
     hostname: example.com # set to fqdn of host
     #ports:
     #  - "19999:19999"
@@ -179,8 +182,8 @@ services:
     security_opt:
       - apparmor:unconfined
     volumes:
-      - netdatalib:/var/lib/netdata
-      - netdatacache:/var/cache/netdata
+      - ./netdata/netdatalib:/var/lib/netdata
+      - ./netdata/netdatacache:/var/cache/netdata
       - /etc/passwd:/host/etc/passwd:ro
       - /etc/group:/host/etc/group:ro
       - /proc:/host/proc:ro
@@ -198,9 +201,9 @@ services:
     networks:
       - traefik-net
 
-volumes:
-  netdatalib:
-  netdatacache:
+#volumes:
+#  netdatalib:
+#  netdatacache:
 
 networks:
   traefik-net:
