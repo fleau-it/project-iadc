@@ -10,6 +10,7 @@
 # -> Modification des volumes de tous les conteneurs pour stockage dans dossier local du docker-compose
 # -> Annulation des modifications sur les volumes de netdata
 # -> Modification conteneur mariadb
+# -> Rectification des volumes nextcloud et mariadb (ajout de / )
 # -> 
 # Points + :
 # -> 
@@ -124,18 +125,18 @@ services:
     #ports:
     #  - "80:80"
     volumes:
-      - "./nc/:var/www/html/"
-      - "./nc-data/:var/www/html/data/"
+      - "./nc/:/var/www/html/"
+      - "./nc-data/:/var/www/html/data/"
     links:
       - "bdd"
   
   bdd:
     image: mariadb
-    #command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     restart: always
     #container_name: "flmariadb"
     volumes:
-      - "./mariadb-data/:var/lib/mysql/"
+      - "./mariadb-data/:/var/lib/mysql/"
     environment:
       - MYSQL_ROOT_PASSWORD=rootAzerty@123
       - MYSQL_DATABASE=nc
