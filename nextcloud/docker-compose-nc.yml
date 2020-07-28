@@ -8,12 +8,15 @@
 # -> Retour à la version 3 du docker-compose
 # -> Modification du volume pour nginx-nc
 # -> Modification des volumes de tous les conteneurs pour stockage dans dossier local du docker-compose
+# -> Annulation des modifications sur les volumes de netdata
+# -> Modification conteneur mariadb
 # -> 
 # Points + :
 # -> 
 # -> 
 # Problèmes :
 # -> volume_from invalide en version 3
+# -> invalid mount config for type "bind": invalid mount path: 'var/lib/mysql' mount path must be absolute
 # -> 
 # A ajouter / à faire / à résoudre :
 # -> 
@@ -128,7 +131,7 @@ services:
   
   bdd:
     image: mariadb
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    #command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     restart: always
     #container_name: "flmariadb"
     volumes:
@@ -182,8 +185,8 @@ services:
     security_opt:
       - apparmor:unconfined
     volumes:
-      - ./netdata/netdatalib:/var/lib/netdata
-      - ./netdata/netdatacache:/var/cache/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
       - /etc/passwd:/host/etc/passwd:ro
       - /etc/group:/host/etc/group:ro
       - /proc:/host/proc:ro
@@ -201,9 +204,9 @@ services:
     networks:
       - traefik-net
 
-#volumes:
-#  netdatalib:
-#  netdatacache:
+volumes:
+  netdatalib:
+  netdatacache:
 
 networks:
   traefik-net:
