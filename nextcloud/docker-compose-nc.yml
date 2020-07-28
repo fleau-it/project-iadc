@@ -5,7 +5,8 @@
 # -> remplacement des "todocenter.fr" par "atomikcactus.net"
 # -> ajout des conteneurs pour déployer NextCloud
 # -> ajout du conteneur de netdata
-# -> retrogradation de la version du docker-compose à 2
+# -> Retour à la version 3 du docker-compose
+# -> Modification du volume pour nginx-nc
 # Points + :
 # -> 
 # -> 
@@ -159,9 +160,10 @@ services:
     links:
       - nextcloud
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    volumes_from:
-      - nextcloud
+    #  - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    #volumes_from:
+    #  - nextcloud
     networks:
       - traefik-net
 
