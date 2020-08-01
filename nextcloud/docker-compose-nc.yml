@@ -26,15 +26,17 @@
 # Sources :
 # - https://hub.docker.com/_/nextcloud
 # - https://stackoverflow.com/questions/42244079/how-to-replace-volumes-from-in-docker-composer-v3
+# - https://computerz.solutions/docker-compose-traefik-nextcloud/
 # - 
 # --------------------------------------------------------------------------------------------------------------------------
 version: '2'
 
 services:
   traefik22-rv-proxy:
-    image: "traefik:v2.2"
+    image: traefik:${TRAEFIKVERSION}
     #container_name: "traefik22-rv-proxy"
     container_name: "tr22-rvp-nc"
+    restart: unless-stopped
     command:
       - "--log.level=DEBUG" # Config Log ; niveau d'informations ()
       #- "--log.format=json" # Config Log ; Format des logs (classique ou json)
@@ -90,14 +92,17 @@ services:
       #- "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "/usr/share/zoneinfo:/usr/share/zoneinfo:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/etc/timezone:/etc/timezone:ro"
       - "./traefik-log:/var/log/traefik-log" # Correspondance des dossiers de stockage réel et conteneur des logs
+      - "./traefik-applog:/etc/traefik/applog.log" 
     networks:
       - traefik-net
 
-  nginx:
-    image: nginx:latest
-    restart: always
-    container_name: "nginx-poc"
+  nginx-atofront:
+    image: nginx:${NGINXVERSION}
+    restart: unless-stopped
+    #container_name: "nginx-poc"
     labels:
       - "traefik.enable=true"
       #- "traefik.http.routers.nginx.rule=Host(`traefik-nginx.atomikcactus.net`)"
@@ -119,33 +124,27 @@ services:
       - traefik-net
 
   nextcloud:
-    image: nextcloud:19.0.1-fpm
-    restart: always
+    image: nextcloud:${NEXTCLOUDVERSION}
+    restart: unless-stopped
     #container_name: "flnc"
     #ports:
     #  - "80:80"
     volumes:
-      - "./nc/:/var/www/html/"
-      - "./nc-data/:/var/www/html/data/"
+      - nextcloud-data:/var/www/html
+    #  - "./nc/:/var/www/html/"
+    #  - "./nc-data/:/var/www/html/data/"
     links:
-      - "bdd"
-  
-  bdd:
-    image: mariadb
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
-    restart: always
-    #container_name: "flmariadb"
-    volumes:
-      - "./mariadb-data/:/var/lib/mysql/"
+      - "mariadb-nextcloud"
     environment:
-      - MYSQL_ROOT_PASSWORD=rootAzerty@123
-      - MYSQL_DATABASE=nc
-      - MYSQL_USER=ncbdduser
-      - MYSQL_PASSWORD=ncAzerty@123
+      MYSQL_HOST: mariadb-nextcloud
+      MYSQL_USER: ${MYSQLUSER}
+      MYSQL_PASSWORD: ${MYSQLPASSWORD}
+      MYSQL_DATABASE: ${MYSQLDB}
+      REDIS_HOST: redis-nextcloud
 
-  nginxnc:
-    image: nginx:latest
-    restart: always
+  nginx-nextcloud:
+    image: nginx:${NGINXVERSION}
+    restart: unless-stopped
     #container_name: "nginx-poc"
     labels:
       - "traefik.enable=true"
@@ -168,16 +167,43 @@ services:
       - nextcloud
     volumes:
     #  - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    #  - ./nginxnextcloud/nginx.conf:/etc/nginx/nginx.conf
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - nextcloud-data:/var/www/html
+      - nginxnextcloud-log:/var/log/nginx/
+    #  - ./nginx-nextcloud/log/:/var/log/nginx/
+    #  - ./conf/nginx-nextcloud/conf.d:/etc/nginx/conf.d
+      - ./conf/nginx-nextcloud:/etc/nginx/conf.d
     #volumes_from:
     #  - nextcloud
     networks:
       - traefik-net
+  
+  mariadb-nextcloud:
+    image: mariadb:${MARIADBVERSION}
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: unless-stopped
+    #container_name: "flmariadb"
+    volumes:
+    #  - "./mariadb-nc-data/:/var/lib/mysql/"
+      - mariadbnextcloud-data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQLROOTPASSWORD}
+      - MYSQL_DATABASE=${MYSQLDB}
+      - MYSQL_USER=${MYSQLUSER}
+      - MYSQL_PASSWORD=${MYSQLPASSWORD}
+
+  redis-nextcloud:
+    image: redis:${REDISVERSION}
+    restart: unless-stopped
+    volumes:
+      - redisnextcloud-data:/data
 
   netdata:
-    image: netdata/netdata
+    image: netdata/netdata:${NETDATAVERSION}
     #container_name: netdata
-    hostname: example.com # set to fqdn of host
+    hostname: examplenawak.com # set to fqdn of host
     #ports:
     #  - "19999:19999"
     restart: unless-stopped
@@ -208,6 +234,10 @@ services:
 volumes:
   netdatalib:
   netdatacache:
+  nextcloud-data:
+  nginxnextcloud-log:
+  mariadbnextcloud-data:
+  redisnextcloud-data:
 
 networks:
   traefik-net:
